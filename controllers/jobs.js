@@ -13,7 +13,7 @@ const getAllJobs = async (req, res) => {
     queryObject.position = { $regex: search, $options: "i" };
   }
 
-  if (status && status !== "All") {
+  if (status && status !== "all") {
     queryObject.status = status;
   }
   if (jobType && jobType !== "all") {
@@ -37,10 +37,23 @@ const getAllJobs = async (req, res) => {
     result = result.sort("-position");
   }
 
+  // pagenation
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  result = result.skip(skip).limit(limit);
+
   const jobs = await result;
+  const numberOfJobs = await Job.countDocuments(queryObject);
+  const numOfPages = Math.ceil(numberOfJobs / limit);
+
+  // console.log(queryObject);
 
   // const jobs = await Job.find({ createdBy: req.user.userId }).sort("createdAt");
-  res.status(StatusCodes.OK).json({ jobs, count: jobs.length });
+  res
+    .status(StatusCodes.OK)
+    .json({ jobs, totalJobs: numberOfJobs, numOfPages });
 };
 const getJob = async (req, res) => {
   const {
